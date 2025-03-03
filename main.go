@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/aktnb/pi-go-bot/commands"
+	"github.com/aktnb/pi-go-bot/command"
 	"github.com/aktnb/pi-go-bot/controller"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
@@ -50,7 +50,7 @@ func main() {
 	defer s.Close()
 
 	// コマンドを追加
-	c.AddGlobalCommand(s, &commands.PingCommand)
+	c.AddGlobalCommand(s, &command.PingCommand)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
