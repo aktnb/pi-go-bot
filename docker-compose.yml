@@ -1,0 +1,17 @@
+services:
+  db:
+    container_name: pi-go-bot-dev-postgres
+    build: 
+      context: .
+      dockerfile: ./postgres/Dockerfile
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pi-go-bot-dev
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+    tmpfs:
+      - /var/lib/postgresql/data
