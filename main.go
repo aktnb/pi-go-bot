@@ -90,6 +90,11 @@ func main() {
 	// コマンドを追加
 	c.AddGlobalCommand(s, &command.PingCommand)
 
+	// スラッシュコマンドを登録
+	if err := c.OverwriteGlobalCommands(s); err != nil {
+		log.Fatalf("Error overwriting global commands: %v", err)
+	}
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	log.Println("Bot is now running. Press CTRL+C to exit.")

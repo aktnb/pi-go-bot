@@ -21,12 +21,12 @@ func (c *Command) HandleInteraction(s *discordgo.Session, i *discordgo.Interacti
 }
 
 type Controller struct {
-	commands map[string]InteractionHandler
+	commands map[string]*Command
 }
 
 func New() *Controller {
 	return &Controller{
-		commands: make(map[string]InteractionHandler),
+		commands: make(map[string]*Command),
 	}
 }
 
@@ -50,14 +50,15 @@ func (c *Controller) HandleInteraction(s *discordgo.Session, i *discordgo.Intera
 }
 
 func (c *Controller) AddGlobalCommand(s *discordgo.Session, cmd *Command) bool {
-	ccmd, err := s.ApplicationCommandCreate(s.State.User.ID, "", &cmd.ApplicationCommand)
-	if err != nil {
-		log.Fatalf("Error creating command: %v", err)
-		return false
-	}
-
-	log.Printf("Command %s added", ccmd.Name)
-	cmd.ApplicationCommand = *ccmd
 	c.commands[cmd.Name] = cmd
 	return true
+}
+
+func (c *Controller) OverwriteGlobalCommands(s *discordgo.Session) (err error) {
+	commands := make([]*discordgo.ApplicationCommand, 0, len(c.commands))
+	for _, cmd := range c.commands {
+		commands = append(commands, &cmd.ApplicationCommand)
+	}
+	_, err = s.ApplicationCommandBulkOverwrite(s.State.User.ID, "", commands)
+	return
 }
