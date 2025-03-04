@@ -6,12 +6,12 @@ services:
       dockerfile: ./postgres/Dockerfile
     restart: always
     ports:
-      - "5432:5432"
+      - "${DB_PORT}:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pi-go-bot-dev
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ./postgres/DB:/docker-entrypoint-initdb.d
     tmpfs:
       - /var/lib/postgresql/data
