@@ -71,12 +71,6 @@ func main() {
 	c = controller.New()
 	s.AddHandler(c.HandleInteraction)
 
-	// Intents
-	s.Identify.Intents = discordgo.MakeIntent(
-		discordgo.IntentGuilds |
-			discordgo.IntentGuildMembers |
-			discordgo.IntentGuildVoiceStates)
-
 	// Discord に接続
 	defer s.Close()
 	err := s.Open()
@@ -85,7 +79,7 @@ func main() {
 	}
 
 	// イベントハンドラーを追加
-	s.AddHandler(room.New().HandleVoiceStateUpdate)
+	s.AddHandler(room.New(db).HandleVoiceStateUpdate)
 
 	// コマンドを追加
 	c.AddGlobalCommand(s, &command.PingCommand)
