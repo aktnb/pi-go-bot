@@ -61,9 +61,6 @@ func init() {
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
-	s.AddHandler(func(s *discordgo.Session, m *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v\n", m.User.Username, m.User.Discriminator)
-	})
 }
 
 func main() {
@@ -71,15 +68,23 @@ func main() {
 	c = controller.New()
 	s.AddHandler(c.HandleInteraction)
 
+	r := room.New(db)
+
+	s.Identify.Intents |= discordgo.IntentsGuildPresences
+
+	// イベントハンドラーを追加
+	s.AddHandler(func(s *discordgo.Session, m *discordgo.Ready) {
+		log.Printf("Logged in as: %v#%v\n", m.User.Username, m.User.Discriminator)
+	})
+	s.AddHandler(r.HandleGuildCreate)
+	s.AddHandler(r.HandleVoiceStateUpdate)
+
 	// Discord に接続
 	defer s.Close()
 	err := s.Open()
 	if err != nil {
 		log.Fatalf("Error opening connection to Discord: %v", err)
 	}
-
-	// イベントハンドラーを追加
-	s.AddHandler(room.New(db).HandleVoiceStateUpdate)
 
 	// コマンドを追加
 	c.AddGlobalCommand(s, &command.PingCommand)

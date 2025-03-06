@@ -42,6 +42,114 @@ func (r *RoomService) HandleVoiceStateUpdate(s *discordgo.Session, v *discordgo.
 	}
 }
 
+func (r *RoomService) HandleGuildCreate(s *discordgo.Session, g *discordgo.GuildCreate) {
+	for _, c := range g.Channels {
+		if c.Type == discordgo.ChannelTypeGuildVoice {
+			go r.syncRoom(s, g.Guild, c)
+		}
+	}
+}
+
+func (r *RoomService) syncRoom(s *discordgo.Session, g *discordgo.Guild, vc *discordgo.Channel) {
+	r.lock.Lock(vc.ID)
+	defer r.lock.Unlock(vc.ID)
+
+	log.Printf("Sync room: %v\n", vc.Name)
+
+	vcMembers, err := r.getVoiceChannelMembers(s, vc.GuildID, vc.ID)
+	if err != nil {
+		log.Printf("Failed to get voice channel members: %v", err)
+		return
+	}
+	room, err := r.roomRepository.GetByVoiceChannelID(vc.ID)
+	if err != nil {
+		log.Printf("Failed to get room: %v", err)
+		return
+	}
+	if room == nil {
+		room = &Room{
+			VoiceChannelID: vc.ID,
+		}
+	}
+
+	if len(vcMembers) == 0 {
+		if room.TextChannelID.Valid {
+			_, err := s.ChannelDelete(room.TextChannelID.String)
+			if err != nil {
+				log.Printf("Failed to delete text channel: %v", err)
+				return
+			}
+			room.TextChannelID = sql.NullString{String: "", Valid: false}
+		}
+	} else {
+		var tc *discordgo.Channel
+		if room.TextChannelID.Valid {
+			tc, err = s.State.Channel(room.TextChannelID.String)
+			if err != nil && err != discordgo.ErrStateNotFound {
+				log.Printf("Failed to get text channel: %v", err)
+				return
+			}
+		}
+		if tc == nil {
+			tc, err = s.GuildChannelCreateComplex(vc.GuildID, discordgo.GuildChannelCreateData{
+				Name:     vc.Name + "-text",
+				Type:     discordgo.ChannelTypeGuildText,
+				ParentID: vc.ParentID,
+				Position: vc.Position,
+				PermissionOverwrites: []*discordgo.PermissionOverwrite{
+					{
+						ID:    s.State.User.ID,
+						Type:  discordgo.PermissionOverwriteTypeMember,
+						Allow: discordgo.PermissionViewChannel,
+					},
+					{
+						ID:   vc.GuildID,
+						Type: discordgo.PermissionOverwriteTypeRole,
+						Deny: discordgo.PermissionViewChannel,
+					},
+				},
+			})
+			if err != nil {
+				log.Printf("Failed to create text channel: %v", err)
+				return
+			}
+			room.TextChannelID = sql.NullString{String: tc.ID, Valid: true}
+		}
+
+		for _, m := range g.Members {
+			if m.User.ID == s.State.User.ID {
+				continue
+			}
+			var found bool
+			for _, vm := range vcMembers {
+				if m.User.ID == vm.User.ID {
+					found = true
+					break
+				}
+			}
+			permission, err := s.State.UserChannelPermissions(m.User.ID, tc.ID)
+			if err != nil && err != discordgo.ErrStateNotFound {
+				log.Printf("Failed to get user channel permissions: %v", err)
+				return
+			}
+			if !found && permission&discordgo.PermissionViewChannel != 0 {
+				err = s.ChannelPermissionSet(tc.ID, m.User.ID, discordgo.PermissionOverwriteTypeMember, 0, discordgo.PermissionViewChannel)
+				if err != nil {
+					log.Printf("Failed to set channel permission: %v", err)
+					return
+				}
+			} else if found && permission&discordgo.PermissionViewChannel == 0 {
+				err = s.ChannelPermissionSet(tc.ID, m.User.ID, discordgo.PermissionOverwriteTypeMember, discordgo.PermissionViewChannel, 0)
+				if err != nil {
+					log.Printf("Failed to set channel permission: %v", err)
+					return
+				}
+			}
+		}
+	}
+	r.roomRepository.Upsert(room)
+}
+
 func (r *RoomService) joinRoom(s *discordgo.Session, v *discordgo.VoiceState) {
 	r.lock.Lock(v.ChannelID)
 	defer r.lock.Unlock(v.ChannelID)
@@ -165,7 +273,11 @@ func (r *RoomService) getVoiceChannelMembers(s *discordgo.Session, gID string, v
 	var members []*discordgo.Member
 	for _, vs := range g.VoiceStates {
 		if vs.ChannelID == vcID {
-			members = append(members, vs.Member)
+			member, err := s.State.Member(gID, vs.UserID)
+			if err != nil {
+				return nil, err
+			}
+			members = append(members, member)
 		}
 	}
 	log.Printf("Members: %v", members)
