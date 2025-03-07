@@ -14,6 +14,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'  # 必要な Go のバージョンを指定
+          check-latest: true
 
       - name: 依存関係の取得
         run: go mod tidy
