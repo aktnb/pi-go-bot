@@ -29,7 +29,7 @@ jobs:
         run: sudo systemctl stop pigobot
 
       - name: バイナリを配置
-        run: sudo cp myapp ~/
+        run: cp myapp ~/
 
       - name: 実行権限を付与
         run: chmod +x ~/myapp
