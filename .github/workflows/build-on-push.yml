@@ -1,6 +1,8 @@
 name: Build on Push  # ワークフローの名前
 
-on: push  # push イベントでトリガー
+on:
+  push:  # push イベントでトリガー
+  pull_request:  # pull_request イベントでトリガー
 
 jobs:
   build:
