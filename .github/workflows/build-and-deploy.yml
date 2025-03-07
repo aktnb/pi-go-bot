@@ -1,0 +1,49 @@
+name: Build and Deploy for ARM64
+
+on: [ workflow_dispatch ]
+
+jobs:
+  build:
+    if: github.actor == 'aktnb' && github.ref_name == 'develop'  # 特定のユーザーが main ブランチに push した場合のみ実行
+    runs-on: ubuntu-latest  # ビルドは GitHub Hosted Runner 上で行う
+    steps:
+      - name: ソースコードをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Go のセットアップ
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'  # 必要な Go のバージョンを指定
+
+      - name: 依存関係の取得
+        run: go mod tidy
+
+      - name: Go のテスト実行
+        run: go test -v ./...
+
+      - name: ARM64 用にコンパイル
+        run: |
+          GOOS=linux GOARCH=arm64 go build -o myapp
+
+      - name: アーティファクトにアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: myapp-arm64
+          path: myapp
+          retention-days: 7  # 必要に応じて保持期間を設定
+
+  deploy:
+    runs-on: self-hosted  # ARM64 の Self-hosted Runner で実行
+    needs: build  # build ジョブの完了後に実行
+    steps:
+      - name: アーティファクトをダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: myapp-arm64
+          path: .
+
+      - name: 実行権限を付与
+        run: chmod +x myapp
+
+      - name: アプリケーションを実行
+        run: ./myapp
