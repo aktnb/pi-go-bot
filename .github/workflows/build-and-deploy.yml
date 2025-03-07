@@ -30,7 +30,6 @@ jobs:
         with:
           name: myapp-arm64
           path: myapp
-          retention-days: 7  # 必要に応じて保持期間を設定
 
   deploy:
     runs-on: self-hosted  # ARM64 の Self-hosted Runner で実行
@@ -40,7 +39,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: myapp-arm64
-          path: .
 
       - name: 実行権限を付与
         run: chmod +x myapp
