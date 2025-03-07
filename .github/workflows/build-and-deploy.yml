@@ -14,7 +14,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'  # 必要な Go のバージョンを指定
-          check-latest: true
 
       - name: 依存関係の取得
         run: go mod tidy
@@ -26,27 +25,14 @@ jobs:
         run: |
           GOOS=linux GOARCH=arm64 go build -o myapp
 
-      - name: アーティファクトにアップロード
-        uses: actions/upload-artifact@v4
-        with:
-          name: myapp-arm64
-          path: myapp
-
-  deploy:
-    runs-on: self-hosted  # ARM64 の Self-hosted Runner で実行
-    needs: build  # build ジョブの完了後に実行
-    steps:
       - name: サービスを停止
         run: sudo systemctl stop pigobot
 
-      - name: アーティファクトをダウンロード
-        uses: actions/download-artifact@v4
-        with:
-          name: myapp-arm64
-          path: .
+      - name: バイナリを配置
+        run: sudo cp myapp ~/
 
       - name: 実行権限を付与
-        run: chmod +x myapp
+        run: chmod +x ~/myapp
 
       - name: サービスを起動
         run: sudo systemctl restart pigobot
