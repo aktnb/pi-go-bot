@@ -5,7 +5,7 @@ on: [ workflow_dispatch ]
 jobs:
   build:
     if: github.actor == 'aktnb' && github.ref_name == 'master'  # 特定のユーザーが main ブランチに push した場合のみ実行
-    runs-on: ubuntu-latest  # ビルドは GitHub Hosted Runner 上で行う
+    runs-on: self-hosted  # ビルドは GitHub Hosted Runner 上で行う
     steps:
       - name: ソースコードをチェックアウト
         uses: actions/checkout@v4
@@ -36,6 +36,9 @@ jobs:
     runs-on: self-hosted  # ARM64 の Self-hosted Runner で実行
     needs: build  # build ジョブの完了後に実行
     steps:
+      - name: サービスを停止
+        run: sudo systemctl stop pigobot
+
       - name: アーティファクトをダウンロード
         uses: actions/download-artifact@v4
         with:
