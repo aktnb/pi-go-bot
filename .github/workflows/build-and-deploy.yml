@@ -45,5 +45,5 @@ jobs:
       - name: 実行権限を付与
         run: chmod +x myapp
 
-      - name: アプリケーションを実行
-        run: ./myapp
+      - name: サービスを起動
+        run: sudo systemctl restart myapp
