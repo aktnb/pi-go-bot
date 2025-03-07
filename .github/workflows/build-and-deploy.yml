@@ -45,4 +45,4 @@ jobs:
         run: chmod +x myapp
 
       - name: サービスを起動
-        run: sudo systemctl restart myapp
+        run: sudo systemctl restart pigobot
