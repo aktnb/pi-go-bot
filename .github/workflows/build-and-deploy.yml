@@ -4,7 +4,7 @@ on: [ workflow_dispatch ]
 
 jobs:
   build:
-    if: github.actor == 'aktnb' && github.ref_name == 'develop'  # 特定のユーザーが main ブランチに push した場合のみ実行
+    if: github.actor == 'aktnb' && github.ref_name == 'master'  # 特定のユーザーが main ブランチに push した場合のみ実行
     runs-on: ubuntu-latest  # ビルドは GitHub Hosted Runner 上で行う
     steps:
       - name: ソースコードをチェックアウト
