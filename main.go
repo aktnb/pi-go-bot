@@ -10,6 +10,7 @@ import (
 	"github.com/aktnb/pi-go-bot/command"
 	"github.com/aktnb/pi-go-bot/controller"
 	"github.com/aktnb/pi-go-bot/service/room"
+	"github.com/aktnb/pi-go-bot/service/translate"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -78,10 +79,16 @@ func main() {
 	})
 	s.AddHandler(r.HandleGuildCreate)
 	s.AddHandler(r.HandleVoiceStateUpdate)
+	t, err := translate.New(os.Getenv("DEEPL_API_KEY"))
+	if err != nil {
+		log.Printf("Error initializing TranslateService: %v", err)
+	} else {
+		s.AddHandler(t.Handle)
+	}
 
 	// Discord に接続
 	defer s.Close()
-	err := s.Open()
+	err = s.Open()
 	if err != nil {
 		log.Fatalf("Error opening connection to Discord: %v", err)
 	}
