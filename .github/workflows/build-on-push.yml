@@ -1,4 +1,4 @@
-name: Build and Deploy for ARM64
+name: Build on Push  # ワークフローの名前
 
 on: push  # push イベントでトリガー
 
