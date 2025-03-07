@@ -88,6 +88,8 @@ func main() {
 
 	// コマンドを追加
 	c.AddGlobalCommand(s, &command.PingCommand)
+	c.AddGlobalCommand(s, &command.CatCommand)
+	c.AddGlobalCommand(s, &command.DogCommand)
 
 	// スラッシュコマンドを登録
 	if err := c.OverwriteGlobalCommands(s); err != nil {
