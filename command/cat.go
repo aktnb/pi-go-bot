@@ -24,9 +24,10 @@ var CatCommand = controller.Command{
 		Description: "Get a random cat image",
 	},
 	Execute: func(s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		resp, err := http.Get("https://api.thecatapi.com/v1/images/search")
-
-		if err != nil {
+		var resp *http.Response
+		var err error
+		errRespond := func() error {
+			log.Printf("Failed to get cat image %v", err)
 			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -36,54 +37,31 @@ var CatCommand = controller.Command{
 			})
 		}
 
+		if resp, err = http.Get("https://api.thecatapi.com/v1/images/search"); err != nil {
+			return errRespond()
+		}
+
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "(=^・^=)",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+			return errRespond()
 		}
 
 		body, _ := io.ReadAll(resp.Body)
 		cats := []Cat{}
 
 		if err := json.Unmarshal(body, &cats); err != nil {
-			log.Println(err)
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "(=^・^=)",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+			return errRespond()
 		}
 
 		data, err := http.DefaultClient.Get(cats[0].Url)
 		if err != nil {
-			log.Println(err)
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "(=^・^=)",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+			return errRespond()
 		}
 		defer data.Body.Close()
 
 		if data.StatusCode != http.StatusOK {
-			log.Println(err)
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "(=^・^=)",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+			return errRespond()
 		}
 
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

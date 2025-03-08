@@ -22,9 +22,10 @@ var DogCommand = controller.Command{
 		Description: "Get a random dog image",
 	},
 	Execute: func(s *discordgo.Session, i *discordgo.InteractionCreate) error {
-		resp, err := http.Get("https://dog.ceo/api/breeds/image/random")
-
-		if err != nil {
+		var resp *http.Response
+		var err error
+		errRespond := func() error {
+			log.Printf("Failed to get dog image %v", err)
 			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
@@ -34,54 +35,32 @@ var DogCommand = controller.Command{
 			})
 		}
 
+		if resp, err = http.Get("https://dog.ceo/api/breeds/image/random"); err != nil {
+			return errRespond()
+		}
+
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "U^q^U",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+			return errRespond()
 		}
 
 		body, _ := io.ReadAll(resp.Body)
 		dog := Dog{}
 
 		if err := json.Unmarshal(body, &dog); err != nil {
-			log.Println(err)
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "U^q^U",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+			return errRespond()
 		}
 
-		data, err := http.DefaultClient.Get(dog.Url)
-		if err != nil {
-			log.Println(err)
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "U^q^U",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+		var data *http.Response
+		if data, err = http.DefaultClient.Get(dog.Url); err != nil {
+			errRespond()
 		}
+
 		defer data.Body.Close()
 
 		if data.StatusCode != http.StatusOK {
-			log.Println(err)
-			return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "U^q^U",
-					Flags:   discordgo.MessageFlagsEphemeral,
-				},
-			})
+			errRespond()
 		}
 
 		return s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
