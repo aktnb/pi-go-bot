@@ -11,6 +11,7 @@ import (
 	"github.com/aktnb/pi-go-bot/controller"
 	"github.com/aktnb/pi-go-bot/service/room"
 	"github.com/aktnb/pi-go-bot/service/translate"
+	"github.com/aktnb/pi-go-bot/service/twitch"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -70,6 +71,7 @@ func main() {
 	s.AddHandler(c.HandleInteraction)
 
 	r := room.New(db)
+	twitch.New()
 
 	s.Identify.Intents |= discordgo.IntentsGuildPresences
 
