@@ -166,7 +166,7 @@ func (r *RoomService) PrepareTextChannel(s *discordgo.Session, vc *discordgo.Cha
 			Name:     "通話用テキストチャンネル",
 			Type:     discordgo.ChannelTypeGuildText,
 			ParentID: vc.ParentID,
-			Position: vc.Position,
+			Position: 0,
 			PermissionOverwrites: []*discordgo.PermissionOverwrite{
 				{
 					ID:    s.State.User.ID,
