@@ -9,6 +9,7 @@ import (
 
 	"github.com/aktnb/pi-go-bot/command"
 	"github.com/aktnb/pi-go-bot/controller"
+	"github.com/aktnb/pi-go-bot/service/response"
 	"github.com/aktnb/pi-go-bot/service/room"
 	"github.com/aktnb/pi-go-bot/service/translate"
 	"github.com/bwmarrin/discordgo"
@@ -70,6 +71,7 @@ func main() {
 	s.AddHandler(c.HandleInteraction)
 
 	r := room.New(db)
+	rs := response.New(db)
 
 	s.Identify.Intents |= discordgo.IntentsGuildPresences
 
@@ -85,6 +87,7 @@ func main() {
 	} else {
 		s.AddHandler(t.Handle)
 	}
+	s.AddHandler(rs.HandleMessageCreate)
 
 	// Discord に接続
 	defer s.Close()
@@ -97,6 +100,7 @@ func main() {
 	c.AddGlobalCommand(s, &command.PingCommand)
 	c.AddGlobalCommand(s, &command.CatCommand)
 	c.AddGlobalCommand(s, &command.DogCommand)
+	c.AddGlobalCommand(s, command.CustomResponseCommand(rs))
 
 	// スラッシュコマンドを登録
 	if err := c.OverwriteGlobalCommands(s); err != nil {
